@@ -32,6 +32,11 @@ type manager struct {
 	logTag             string
 }
 
+type softlayerVM struct {
+	fullyQualifiedDomainName string
+	primaryBackendIpAddress string
+}
+
 func NewManager(
 	vmRepo biconfig.VMRepo,
 	stemcellRepo biconfig.StemcellRepo,
@@ -118,6 +123,15 @@ func (m *manager) Create(stemcell bistemcell.CloudStemcell, deploymentManifest b
 		}
 	}
 
+	hostname, privateIP, err = m.cloud.FindVM(cid)
+	if err != nil {
+		return nil, bosherr.WrapErrorf(err, "Fetching details of vm: %s", cid)
+	}
+	softlayerVM := softlayerVM{fullyQualifiedDomainName: hostname, primaryBackendIpAddress: privateIP}
+	if err := m.setupBoshInitEtcHosts(softlayerVM) ; err != nil {
+		return nil, bosherr.WrapErrorf(err, "Writing to /etc/hosts")
+	}
+
 	vm := NewVM(
 		cid,
 		m.vmRepo,
@@ -146,3 +160,23 @@ func (m *manager) createAndRecordVm(agentID string, stemcell bistemcell.CloudSte
 
 	return cid, nil
 }
+
+func (m *manager) setupBoshInitEtcHosts(softlayerVM softlayerVM) (err error) {
+	buffer := bytes.NewBuffer([]byte{})
+	t := template.Must(template.New("etc-hosts").Parse(etcHostsTemplate))
+
+	err = t.Execute(buffer, softlayerVM)
+	if err != nil {
+		return bosherr.WrapError(err, "Generating config from template")
+	}
+
+	err = p.fs.WriteFile("/etc/hosts", buffer.Bytes())
+	if err != nil {
+		return bosherr.WrapError(err, "Writing to /etc/hosts")
+	}
+	return nil
+}
+
+const etcHostsTemplate = `127.0.0.1 localhost
+{{.primaryBackendIpAddress}} {{.fullyQualifiedDomainName}}
+`

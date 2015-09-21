@@ -25,6 +25,7 @@ type Cloud interface {
 	AttachDisk(vmCID, diskCID string) error
 	DetachDisk(vmCID, diskCID string) error
 	DeleteDisk(diskCID string) error
+	FindVM(vmCID string) (hostname string, privateIP string, err error)
 	fmt.Stringer
 }
 
@@ -108,6 +109,25 @@ func (c cloud) HasVM(vmCID string) (bool, error) {
 		return false, bosherr.Errorf("Unexpected external CPI command result: '%#v'", cmdOutput.Result)
 	}
 	return found, nil
+}
+
+func (c cloud) FindVM(vmCID string) (string, string, error) {
+	c.logger.Debug(c.logTag, "Discovering backendIP address of vm '%s'", vmCID)
+	method := "find_vm"
+	cmdOutput, err := c.cpiCmdRunner.Run(c.context, method, vmCID)
+	if err != nil {
+		return "", "", bosherr.WrapError(err, "Calling CPI 'find_vm' method")
+	}
+
+	if cmdOutput.Error != nil {
+		return "", "", NewCPIError(method, *cmdOutput.Error)
+	}
+
+	hostname, privateIP, ok := cmdOutput.Result.(string)
+	if !ok {
+		return "", "", bosherr.Errorf("Unexpected external CPI command result: '%#v'", cmdOutput.Result)
+	}
+	return hostname, privateIP, nil
 }
 
 func (c cloud) CreateVM(
