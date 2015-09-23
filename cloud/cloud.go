@@ -112,9 +112,12 @@ func (c cloud) HasVM(vmCID string) (bool, error) {
 }
 
 func (c cloud) FindVM(vmCID string) (string, string, error) {
-	c.logger.Debug(c.logTag, "Discovering backendIP address of vm '%s'", vmCID)
-	method := "find_vm"
-	cmdOutput, err := c.cpiCmdRunner.Run(c.context, method, vmCID)
+	c.logger.Debug(c.logTag, "Discovering vm '%s'", vmCID)
+	cmdOutput, err := c.cpiCmdRunner.Run(
+		c.context,
+		"find_vm",
+		vmCID,
+	)
 	if err != nil {
 		return "", "", bosherr.WrapError(err, "Calling CPI 'find_vm' method")
 	}
@@ -168,9 +171,8 @@ func (c cloud) CreateVM(
 func (c cloud) SetVMMetadata(vmCID string, metadata VMMetadata) error {
 	cmdOutput, err := c.cpiCmdRunner.Run(
 		c.context,
-		"set_vm_metadata",
+		"find_vm",
 		vmCID,
-		metadata,
 	)
 
 	if err != nil {
@@ -178,7 +180,7 @@ func (c cloud) SetVMMetadata(vmCID string, metadata VMMetadata) error {
 	}
 
 	if cmdOutput.Error != nil {
-		return NewCPIError("set_vm_metadata", *cmdOutput.Error)
+		return NewCPIError("set_vm", *cmdOutput.Error)
 	}
 
 	return nil

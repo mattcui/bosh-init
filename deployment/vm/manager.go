@@ -123,6 +123,8 @@ func (m *manager) Create(stemcell bistemcell.CloudStemcell, deploymentManifest b
 		}
 	}
 
+	m.logger.Debug(m.logTag, "WJQ: pre find_vm")
+
 	hostname, privateIP, err = m.cloud.FindVM(cid)
 	if err != nil {
 		return nil, bosherr.WrapErrorf(err, "Fetching details of vm: %s", cid)
@@ -131,6 +133,8 @@ func (m *manager) Create(stemcell bistemcell.CloudStemcell, deploymentManifest b
 	if err := m.setupBoshInitEtcHosts(softlayerVM) ; err != nil {
 		return nil, bosherr.WrapErrorf(err, "Writing to /etc/hosts")
 	}
+
+	m.logger.Debug(m.logTag, "WJQ Post find_vm")
 
 	vm := NewVM(
 		cid,
