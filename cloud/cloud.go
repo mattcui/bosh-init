@@ -171,9 +171,8 @@ func (c cloud) CreateVM(
 func (c cloud) SetVMMetadata(vmCID string, metadata VMMetadata) error {
 	cmdOutput, err := c.cpiCmdRunner.Run(
 		c.context,
-		"set_vm_metadata",
+		"find_vm",
 		vmCID,
-		metadata,
 	)
 
 	if err != nil {
@@ -181,7 +180,7 @@ func (c cloud) SetVMMetadata(vmCID string, metadata VMMetadata) error {
 	}
 
 	if cmdOutput.Error != nil {
-		return NewCPIError("set_vm_metadata", *cmdOutput.Error)
+		return NewCPIError("set_vm", *cmdOutput.Error)
 	}
 
 	return nil
