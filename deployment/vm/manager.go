@@ -1,6 +1,8 @@
 package vm
 
 import (
+        "bytes"
+        "text/template"
 	bicloud "github.com/cloudfoundry/bosh-init/cloud"
 	biconfig "github.com/cloudfoundry/bosh-init/config"
 	bideplmanifest "github.com/cloudfoundry/bosh-init/deployment/manifest"
@@ -30,11 +32,6 @@ type manager struct {
 	fs                 boshsys.FileSystem
 	logger             boshlog.Logger
 	logTag             string
-}
-
-type softlayerVM struct {
-	fullyQualifiedDomainName string
-	primaryBackendIpAddress string
 }
 
 func NewManager(
@@ -88,6 +85,7 @@ func (m *manager) Create(stemcell bistemcell.CloudStemcell, deploymentManifest b
 	jobName := deploymentManifest.JobName()
 	networkInterfaces, err := deploymentManifest.NetworkInterfaces(jobName)
 	m.logger.Debug(m.logTag, "Creating VM with network interfaces: %#v", networkInterfaces)
+	m.logger.Debug(m.logTag, "WJQ: debuging:")
 	if err != nil {
 		return nil, bosherr.WrapError(err, "Getting network spec")
 	}
@@ -107,7 +105,7 @@ func (m *manager) Create(stemcell bistemcell.CloudStemcell, deploymentManifest b
 		return nil, err
 	}
 
-	metadata := bicloud.VMMetadata{
+        metadata := bicloud.VMMetadata{
 		Deployment: deploymentManifest.Name,
 		Job:        deploymentManifest.JobName(),
 		Index:      "0",
@@ -123,15 +121,16 @@ func (m *manager) Create(stemcell bistemcell.CloudStemcell, deploymentManifest b
 		}
 	}
 
-	hostname, privateIP, err = m.cloud.FindVM(cid)
+        m.logger.Debug(m.logTag, "WJQ: before findVM")
+	record, err := m.cloud.FindVM(cid)
 	if err != nil {
 		return nil, bosherr.WrapErrorf(err, "Fetching details of vm: %s", cid)
 	}
-	softlayerVM := softlayerVM{fullyQualifiedDomainName: hostname, primaryBackendIpAddress: privateIP}
-	if err := m.setupBoshInitEtcHosts(softlayerVM) ; err != nil {
+        m.logger.Debug(m.logTag, "WJQ: record: '%s'", record)
+	if err := m.setupBoshInitEtcHosts(record) ; err != nil {
 		return nil, bosherr.WrapErrorf(err, "Writing to /etc/hosts")
 	}
-
+        m.logger.Debug(m.logTag, "WJQ: after findVM")
 	vm := NewVM(
 		cid,
 		m.vmRepo,
@@ -161,16 +160,16 @@ func (m *manager) createAndRecordVm(agentID string, stemcell bistemcell.CloudSte
 	return cid, nil
 }
 
-func (m *manager) setupBoshInitEtcHosts(softlayerVM softlayerVM) (err error) {
+func (m *manager) setupBoshInitEtcHosts(record string) (err error) {
 	buffer := bytes.NewBuffer([]byte{})
 	t := template.Must(template.New("etc-hosts").Parse(etcHostsTemplate))
 
-	err = t.Execute(buffer, softlayerVM)
+	err = t.Execute(buffer, record)
 	if err != nil {
 		return bosherr.WrapError(err, "Generating config from template")
 	}
 
-	err = p.fs.WriteFile("/etc/hosts", buffer.Bytes())
+	err = m.fs.WriteFile("/etc/hosts", buffer.Bytes())
 	if err != nil {
 		return bosherr.WrapError(err, "Writing to /etc/hosts")
 	}
@@ -178,5 +177,5 @@ func (m *manager) setupBoshInitEtcHosts(softlayerVM softlayerVM) (err error) {
 }
 
 const etcHostsTemplate = `127.0.0.1 localhost
-{{.primaryBackendIpAddress}} {{.fullyQualifiedDomainName}}
+{{.}} 
 `
