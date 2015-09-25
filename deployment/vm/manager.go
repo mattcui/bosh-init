@@ -85,7 +85,6 @@ func (m *manager) Create(stemcell bistemcell.CloudStemcell, deploymentManifest b
 	jobName := deploymentManifest.JobName()
 	networkInterfaces, err := deploymentManifest.NetworkInterfaces(jobName)
 	m.logger.Debug(m.logTag, "Creating VM with network interfaces: %#v", networkInterfaces)
-	m.logger.Debug(m.logTag, "WJQ: debuging:")
 	if err != nil {
 		return nil, bosherr.WrapError(err, "Getting network spec")
 	}
@@ -120,17 +119,16 @@ func (m *manager) Create(stemcell bistemcell.CloudStemcell, deploymentManifest b
 			return nil, bosherr.WrapErrorf(err, "Setting VM metadata to %s", metadata)
 		}
 	}
-
-        m.logger.Debug(m.logTag, "WJQ: before findVM")
+	
 	record, err := m.cloud.FindVM(cid)
 	if err != nil {
 		return nil, bosherr.WrapErrorf(err, "Fetching details of vm: %s", cid)
 	}
-        m.logger.Debug(m.logTag, "WJQ: record: '%s'", record)
+       
 	if err := m.setupBoshInitEtcHosts(record) ; err != nil {
 		return nil, bosherr.WrapErrorf(err, "Writing to /etc/hosts")
 	}
-        m.logger.Debug(m.logTag, "WJQ: after findVM")
+       
 	vm := NewVM(
 		cid,
 		m.vmRepo,
