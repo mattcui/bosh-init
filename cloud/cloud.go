@@ -112,7 +112,6 @@ func (c cloud) HasVM(vmCID string) (bool, error) {
 }
 
 func (c cloud) FindVM(vmCID string) (string, error) {
-	c.logger.Debug(c.logTag, "Discovering details of vm '%s'", vmCID)
 	cmdOutput, err := c.cpiCmdRunner.Run(
 		c.context,
 		"find_vm",
@@ -125,7 +124,7 @@ func (c cloud) FindVM(vmCID string) (string, error) {
 	if cmdOutput.Error != nil {
 		return "", NewCPIError("find_vm", *cmdOutput.Error)
 	}
-        c.logger.Debug(c.logTag, "WJQ: cmd output '%s'", cmdOutput.Result.(string))
+	
 	record, ok := cmdOutput.Result.(string)
 	if !ok {
 		return "", bosherr.Errorf("Unexpected external CPI command result: '%#v'", cmdOutput.Result)
@@ -171,8 +170,9 @@ func (c cloud) CreateVM(
 func (c cloud) SetVMMetadata(vmCID string, metadata VMMetadata) error {
 	cmdOutput, err := c.cpiCmdRunner.Run(
 		c.context,
-		"find_vm",
+		"set_vm_metadata",
 		vmCID,
+		metadata,
 	)
 
 	if err != nil {
@@ -180,7 +180,7 @@ func (c cloud) SetVMMetadata(vmCID string, metadata VMMetadata) error {
 	}
 
 	if cmdOutput.Error != nil {
-		return NewCPIError("set_vm", *cmdOutput.Error)
+		return NewCPIError("set_vm_metadata", *cmdOutput.Error)
 	}
 
 	return nil
