@@ -92,9 +92,16 @@ func (m *manager) Create(stemcell bistemcell.CloudStemcell, deploymentManifest b
 		return nil, bosherr.WrapErrorf(err, "Getting resource pool for job '%s'", jobName)
 	}
 
-	agentID, err := m.uuidGenerator.Generate()
+       	agentID, found, err := m.vmRepo.FindCurrentAgentId()
 	if err != nil {
-		return nil, bosherr.WrapError(err, "Generating agent ID")
+		return nil, bosherr.WrapError(err, "Finding currently agent id of deployed vm")
+	}
+
+	if !found {
+		agentID, err = m.uuidGenerator.Generate()
+		if err != nil {
+			return nil, bosherr.WrapError(err, "Generating agent ID")
+		}
 	}
 
 	cid, err := m.createAndRecordVm(agentID, stemcell, resourcePool, networkInterfaces)
@@ -143,6 +150,11 @@ func (m *manager) createAndRecordVm(agentID string, stemcell bistemcell.CloudSte
 	if err != nil {
 		return "", bosherr.WrapError(err, "Updating current vm record")
 	}
+        
+       err = m.vmRepo.UpdateCurrentAgentId(agentID)
+       if err != nil {
+                return "", bosherr.WrapError(err, "Updating current agent id record")
+        }
 
 	return cid, nil
 }
