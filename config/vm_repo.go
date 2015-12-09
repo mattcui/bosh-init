@@ -6,9 +6,9 @@ import (
 
 type VMRepo interface {
 	FindCurrent() (cid string, found bool, err error)
-        FindCurrentAgentId()(agentId string, found bool, err error)
+	FindCurrentAgentId()(agentId string, found bool, err error)
 	UpdateCurrent(cid string) error
-        UpdateCurrentAgentId(agentId string) error
+	UpdateCurrentAgentId(agentId string) error
 	ClearCurrent() error
 }
 
@@ -88,7 +88,6 @@ func (r vMRepo) ClearCurrent() error {
 	}
 
 	deploymentState.CurrentVMCID = ""
-        deploymentState.CurrentAgentID= ""
 
 	err = r.deploymentStateService.Save(deploymentState)
 	if err != nil {

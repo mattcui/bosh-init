@@ -20,7 +20,7 @@ type Cloud interface {
 		env biproperty.Map,
 	) (vmCID string, err error)
 	SetVMMetadata(cmCID string, metadata VMMetadata) error
-	DeleteVM(vmCID string) error
+	DeleteVM(vmCID string, agentID string) error
 	CreateDisk(size int, cloudProperties biproperty.Map, vmCID string) (diskCID string, err error)
 	AttachDisk(vmCID, diskCID string) error
 	DetachDisk(vmCID, diskCID string) error
@@ -234,10 +234,10 @@ func (c cloud) DetachDisk(vmCID, diskCID string) error {
 	return nil
 }
 
-func (c cloud) DeleteVM(vmCID string) error {
-	c.logger.Debug(c.logTag, "Deleting vm '%s'", vmCID)
+func (c cloud) DeleteVM(vmCID string, agentID string) error {
+	c.logger.Debug(c.logTag, "Deleting vm '%s' with agentID '%s'", vmCID, agentID)
 	method := "delete_vm"
-	cmdOutput, err := c.cpiCmdRunner.Run(c.context, method, vmCID)
+	cmdOutput, err := c.cpiCmdRunner.Run(c.context, method, vmCID, agentID)
 	if err != nil {
 		return bosherr.WrapError(err, "Calling CPI 'delete_vm' method")
 	}

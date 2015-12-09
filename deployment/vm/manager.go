@@ -92,7 +92,7 @@ func (m *manager) Create(stemcell bistemcell.CloudStemcell, deploymentManifest b
 		return nil, bosherr.WrapErrorf(err, "Getting resource pool for job '%s'", jobName)
 	}
 
-       	agentID, found, err := m.vmRepo.FindCurrentAgentId()
+	agentID, found, err := m.vmRepo.FindCurrentAgentId()
 	if err != nil {
 		return nil, bosherr.WrapError(err, "Finding currently agent id of deployed vm")
 	}

@@ -185,7 +185,12 @@ func (vm *vm) MigrateDisk() error {
 }
 
 func (vm *vm) Delete() error {
-	deleteErr := vm.cloud.DeleteVM(vm.cid)
+	agentID, _, err := vm.vmRepo.FindCurrentAgentId()
+	if err != nil {
+		return bosherr.WrapError(err, "Finding currently agent id of deployed vm")
+	}
+
+	deleteErr := vm.cloud.DeleteVM(vm.cid, agentID)
 	if deleteErr != nil {
 		// allow VMNotFoundError for idempotency
 		cloudErr, ok := deleteErr.(bicloud.Error)
@@ -194,7 +199,7 @@ func (vm *vm) Delete() error {
 		}
 	}
 
-	err := vm.vmRepo.ClearCurrent()
+	err = vm.vmRepo.ClearCurrent()
 	if err != nil {
 		return bosherr.WrapError(err, "Deleting vm from vm repo")
 	}

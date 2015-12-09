@@ -123,6 +123,11 @@ func (m *legacyDeploymentStateMigrator) migrate(configPath string) (deploymentSt
 			deploymentState.CurrentVMCID = vmCID
 		}
 
+		agentID := instance.VMAGENTID
+		if agentID != "" {
+			deploymentState.CurrentAgentID = agentID
+		}
+
 		stemcellCID := instance.StemcellCID
 		if stemcellCID != "" {
 			uuid, err := m.uuidGenerator.Generate()
@@ -158,6 +163,7 @@ type legacyDeploymentState struct {
 type instance struct {
 	UUID         string `yaml:"uuid"`
 	VMCID        string `yaml:"vm_cid"`
+	VMAGENTID    string `yaml:"vm_agentid"`
 	DiskCID      string `yaml:"disk_cid"`
 	StemcellCID  string `yaml:"stemcell_cid"`
 	StemcellName string `yaml:"stemcell_name"`
