@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"strings"
+
 	biblobstore "github.com/cloudfoundry/bosh-init/blobstore"
 	bicloud "github.com/cloudfoundry/bosh-init/cloud"
 	biconfig "github.com/cloudfoundry/bosh-init/config"
@@ -156,6 +158,26 @@ func (c *DeploymentPreparer) PrepareDeployment(stage biui.Stage) (err error) {
 		}
 
 		extractedStemcell, err = c.stemcellFetcher.GetStemcell(deploymentManifest, stage)
+
+		nonCpiReleasesMap, _ := deploymentManifest.GetListOfTemplateReleases()
+		delete(nonCpiReleasesMap, installationManifest.Template.Release) // remove CPI release from nonCpiReleasesMap
+
+		for _, release := range c.releaseManager.List() {
+			if _, ok := nonCpiReleasesMap[release.Name()]; ok {
+				if release.IsCompiled() {
+					compilationOsAndVersion := release.Packages()[0].Stemcell
+					if strings.ToLower(compilationOsAndVersion) != strings.ToLower(extractedStemcell.OsAndVersion()) {
+						return bosherr.Errorf("OS/Version mismatch between deployment stemcell and compiled package stemcell for release '%s'", release.Name())
+					}
+				}
+			} else {
+				// It is a CPI release, check if it is compiled
+				if release.IsCompiled() {
+					return bosherr.Errorf("CPI is not allowed to be a compiled release. The provided CPI release '%s' is compiled", release.Name())
+				}
+			}
+		}
+
 		return err
 	})
 	if err != nil {
