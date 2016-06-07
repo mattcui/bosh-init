@@ -6,22 +6,22 @@ import (
 	"path/filepath"
 
 	bicmd "github.com/cloudfoundry/bosh-init/cmd"
-	. "github.com/cloudfoundry/bosh-init/internal/github.com/onsi/ginkgo"
-	. "github.com/cloudfoundry/bosh-init/internal/github.com/onsi/gomega"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
-	"github.com/cloudfoundry/bosh-init/internal/github.com/golang/mock/gomock"
 	"github.com/cloudfoundry/bosh-init/crypto"
 	"github.com/cloudfoundry/bosh-init/deployment"
-	"github.com/cloudfoundry/bosh-init/internal/github.com/onsi/gomega/gbytes"
+	"github.com/golang/mock/gomock"
+	"github.com/onsi/gomega/gbytes"
 
+	mock_httpagent "github.com/cloudfoundry/bosh-agent/agentclient/http/mocks"
+	mock_agentclient "github.com/cloudfoundry/bosh-init/agentclient/mocks"
 	mock_blobstore "github.com/cloudfoundry/bosh-init/blobstore/mocks"
 	mock_cloud "github.com/cloudfoundry/bosh-init/cloud/mocks"
 	mock_config "github.com/cloudfoundry/bosh-init/config/mocks"
 	mock_deployment "github.com/cloudfoundry/bosh-init/deployment/mocks"
 	mock_vm "github.com/cloudfoundry/bosh-init/deployment/vm/mocks"
 	mock_install "github.com/cloudfoundry/bosh-init/installation/mocks"
-	mock_httpagent "github.com/cloudfoundry/bosh-init/internal/github.com/cloudfoundry/bosh-agent/agentclient/http/mocks"
-	mock_agentclient "github.com/cloudfoundry/bosh-init/internal/github.com/cloudfoundry/bosh-agent/agentclient/mocks"
 	mock_registry "github.com/cloudfoundry/bosh-init/registry/mocks"
 	mock_release "github.com/cloudfoundry/bosh-init/release/mocks"
 	mock_stemcell "github.com/cloudfoundry/bosh-init/stemcell/mocks"
@@ -33,29 +33,29 @@ import (
 	biinstall "github.com/cloudfoundry/bosh-init/installation"
 	biinstallmanifest "github.com/cloudfoundry/bosh-init/installation/manifest"
 	bitarball "github.com/cloudfoundry/bosh-init/installation/tarball"
-	bosherr "github.com/cloudfoundry/bosh-init/internal/github.com/cloudfoundry/bosh-utils/errors"
-	boshlog "github.com/cloudfoundry/bosh-init/internal/github.com/cloudfoundry/bosh-utils/logger"
-	biproperty "github.com/cloudfoundry/bosh-init/internal/github.com/cloudfoundry/bosh-utils/property"
 	birel "github.com/cloudfoundry/bosh-init/release"
-	bipkg "github.com/cloudfoundry/bosh-init/release/pkg"
 	bireljob "github.com/cloudfoundry/bosh-init/release/job"
 	birelmanifest "github.com/cloudfoundry/bosh-init/release/manifest"
+	bipkg "github.com/cloudfoundry/bosh-init/release/pkg"
 	birelsetmanifest "github.com/cloudfoundry/bosh-init/release/set/manifest"
 	bistemcell "github.com/cloudfoundry/bosh-init/stemcell"
 	biui "github.com/cloudfoundry/bosh-init/ui"
+	bosherr "github.com/cloudfoundry/bosh-utils/errors"
+	boshlog "github.com/cloudfoundry/bosh-utils/logger"
+	biproperty "github.com/cloudfoundry/bosh-utils/property"
 
 	fakebicloud "github.com/cloudfoundry/bosh-init/cloud/fakes"
 	fakebideplmanifest "github.com/cloudfoundry/bosh-init/deployment/manifest/fakes"
 	fakebideplval "github.com/cloudfoundry/bosh-init/deployment/manifest/fakes"
 	fakebivm "github.com/cloudfoundry/bosh-init/deployment/vm/fakes"
 	fakebiinstallmanifest "github.com/cloudfoundry/bosh-init/installation/manifest/fakes"
-	fakebihttpclient "github.com/cloudfoundry/bosh-init/internal/github.com/cloudfoundry/bosh-utils/httpclient/fakes"
-	fakesys "github.com/cloudfoundry/bosh-init/internal/github.com/cloudfoundry/bosh-utils/system/fakes"
-	fakeuuid "github.com/cloudfoundry/bosh-init/internal/github.com/cloudfoundry/bosh-utils/uuid/fakes"
 	fakebirel "github.com/cloudfoundry/bosh-init/release/fakes"
 	fakebirelsetmanifest "github.com/cloudfoundry/bosh-init/release/set/manifest/fakes"
 	fakebistemcell "github.com/cloudfoundry/bosh-init/stemcell/fakes"
 	fakebiui "github.com/cloudfoundry/bosh-init/ui/fakes"
+	fakebihttpclient "github.com/cloudfoundry/bosh-utils/httpclient/fakes"
+	fakesys "github.com/cloudfoundry/bosh-utils/system/fakes"
+	fakeuuid "github.com/cloudfoundry/bosh-utils/uuid/fakes"
 )
 
 var _ = Describe("DeployCmd", rootDesc)
@@ -175,7 +175,7 @@ func rootDesc() {
 
 			mockBlobstoreFactory = mock_blobstore.NewMockFactory(mockCtrl)
 			mockBlobstore = mock_blobstore.NewMockBlobstore(mockCtrl)
-			mockBlobstoreFactory.EXPECT().Create(mbusURL).Return(mockBlobstore, nil).AnyTimes()
+			mockBlobstoreFactory.EXPECT().Create(mbusURL, gomock.Any()).Return(mockBlobstore, nil).AnyTimes()
 
 			mockVMManagerFactory = mock_vm.NewMockManagerFactory(mockCtrl)
 			fakeVMManager = fakebivm.NewFakeManager()
@@ -216,7 +216,7 @@ func rootDesc() {
 					Version:         "fake-stemcell-version",
 					SHA1:            "fake-stemcell-sha1",
 					CloudProperties: biproperty.Map{},
-					OS:				 "ubuntu-trusty",
+					OS:              "ubuntu-trusty",
 				},
 				"fake-extracted-path",
 				fakeFs,
@@ -1060,7 +1060,6 @@ func rootDesc() {
 					otherReleaseTarballPath,
 				).Return(fakeOtherRelease, nil).AnyTimes()
 
-
 				releaseSetManifest = birelsetmanifest.Manifest{
 					Releases: []birelmanifest.ReleaseRef{
 						{
@@ -1081,7 +1080,7 @@ func rootDesc() {
 							Name: "fake-job-name",
 							Templates: []bideplmanifest.ReleaseJobRef{
 								{
-									Release:"other-release",
+									Release: "other-release",
 								},
 							},
 						},

@@ -1,19 +1,19 @@
 package release
 
 import (
-	boshsys "github.com/cloudfoundry/bosh-init/internal/github.com/cloudfoundry/bosh-utils/system"
 	bireljob "github.com/cloudfoundry/bosh-init/release/job"
 	birelpkg "github.com/cloudfoundry/bosh-init/release/pkg"
+	boshsys "github.com/cloudfoundry/bosh-utils/system"
 )
 
 type release struct {
-	name          			string
-	version       			string
-	jobs          			[]bireljob.Job
-	packages      			[]*birelpkg.Package
-	extractedPath 			string
-	fs            			boshsys.FileSystem
-	isCompiled    			bool
+	name          string
+	version       string
+	jobs          []bireljob.Job
+	packages      []*birelpkg.Package
+	extractedPath string
+	fs            boshsys.FileSystem
+	isCompiled    bool
 }
 
 type Release interface {
@@ -77,4 +77,3 @@ func (r *release) Exists() bool {
 }
 
 func (r *release) IsCompiled() bool { return r.isCompiled }
-

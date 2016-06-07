@@ -1,13 +1,13 @@
 package release_test
 
 import (
-	. "github.com/cloudfoundry/bosh-init/internal/github.com/onsi/ginkgo"
-	. "github.com/cloudfoundry/bosh-init/internal/github.com/onsi/gomega"
 	. "github.com/cloudfoundry/bosh-init/release"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
-	fakesys "github.com/cloudfoundry/bosh-init/internal/github.com/cloudfoundry/bosh-utils/system/fakes"
 	bireljob "github.com/cloudfoundry/bosh-init/release/job"
 	birelpkg "github.com/cloudfoundry/bosh-init/release/pkg"
+	fakesys "github.com/cloudfoundry/bosh-utils/system/fakes"
 )
 
 var _ = Describe("Validator", func() {
@@ -200,7 +200,6 @@ var _ = Describe("Validator", func() {
 		})
 	})
 
-
 	Context("when the release is a compiled release", func() {
 
 		It("validates the relase without error", func() {
@@ -326,6 +325,5 @@ var _ = Describe("Validator", func() {
 			Expect(err.Error()).To(ContainSubstring("Compiled package 'fake-compiled-package-1-name' stemcell is missing"))
 		})
 	})
-
 
 })
