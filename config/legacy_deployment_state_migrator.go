@@ -166,7 +166,7 @@ type instance struct {
 	VMCID        string `yaml:"vm_cid"`
 	VMAGENTID    string `yaml:"vm_agentid"`
 	DiskCID      string `yaml:"disk_cid"`
-	DiskSIZE     string `yaml:"disk_size"`
+	DiskSIZE     int    `yaml:"disk_size"`
 	StemcellCID  string `yaml:"stemcell_cid"`
 	StemcellName string `yaml:"stemcell_name"`
 }
