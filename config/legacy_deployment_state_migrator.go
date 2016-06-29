@@ -101,6 +101,7 @@ func (m *legacyDeploymentStateMigrator) migrate(configPath string) (deploymentSt
 	if len(legacyDeploymentState.Instances) > 0 {
 		instance := legacyDeploymentState.Instances[0]
 		diskCID := instance.DiskCID
+		diskSIZE := instance.DiskSIZE
 		if diskCID != "" {
 			uuid, err := m.uuidGenerator.Generate()
 			if err != nil {
@@ -112,7 +113,7 @@ func (m *legacyDeploymentStateMigrator) migrate(configPath string) (deploymentSt
 				{
 					ID:              uuid,
 					CID:             diskCID,
-					Size:            0,
+					Size:            diskSIZE,
 					CloudProperties: biproperty.Map{},
 				},
 			}
@@ -165,6 +166,7 @@ type instance struct {
 	VMCID        string `yaml:"vm_cid"`
 	VMAGENTID    string `yaml:"vm_agentid"`
 	DiskCID      string `yaml:"disk_cid"`
+	DiskSIZE     int    `yaml:"disk_size"`
 	StemcellCID  string `yaml:"stemcell_cid"`
 	StemcellName string `yaml:"stemcell_name"`
 }
