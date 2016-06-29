@@ -1,17 +1,17 @@
 package job_test
 
 import (
-	. "github.com/cloudfoundry/bosh-init/internal/github.com/onsi/ginkgo"
-	. "github.com/cloudfoundry/bosh-init/internal/github.com/onsi/gomega"
 	. "github.com/cloudfoundry/bosh-init/state/job"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
-	"github.com/cloudfoundry/bosh-init/internal/github.com/golang/mock/gomock"
 	mock_state_package "github.com/cloudfoundry/bosh-init/state/pkg/mocks"
+	"github.com/golang/mock/gomock"
 
-	boshlog "github.com/cloudfoundry/bosh-init/internal/github.com/cloudfoundry/bosh-utils/logger"
 	bireljob "github.com/cloudfoundry/bosh-init/release/job"
 	birelpkg "github.com/cloudfoundry/bosh-init/release/pkg"
 	bistatepkg "github.com/cloudfoundry/bosh-init/state/pkg"
+	boshlog "github.com/cloudfoundry/bosh-utils/logger"
 
 	fakebiui "github.com/cloudfoundry/bosh-init/ui/fakes"
 )
@@ -159,7 +159,7 @@ var _ = Describe("DependencyCompiler", func() {
 			_, err := dependencyCompiler.Compile(releaseJobs, fakeStage)
 			Expect(err).ToNot(HaveOccurred())
 
-			for _, call := range fakeStage.PerformCalls{
+			for _, call := range fakeStage.PerformCalls {
 				Expect(call.SkipError.Error()).To(MatchRegexp("Package already compiled: Package 'fake-release-package-name-\\d' is already compiled. Skipped compilation"))
 			}
 		})

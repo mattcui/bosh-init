@@ -13,19 +13,21 @@ import (
 	"text/template"
 	"time"
 
-	. "github.com/cloudfoundry/bosh-init/internal/github.com/onsi/ginkgo"
-	. "github.com/cloudfoundry/bosh-init/internal/github.com/onsi/gomega"
-	"github.com/cloudfoundry/bosh-init/internal/github.com/onsi/gomega/gbytes"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 
+	mock_httpagent "github.com/cloudfoundry/bosh-agent/agentclient/http/mocks"
+	mock_agentclient "github.com/cloudfoundry/bosh-init/agentclient/mocks"
 	mock_blobstore "github.com/cloudfoundry/bosh-init/blobstore/mocks"
 	mock_cloud "github.com/cloudfoundry/bosh-init/cloud/mocks"
 	mock_instance_state "github.com/cloudfoundry/bosh-init/deployment/instance/state/mocks"
 	mock_install "github.com/cloudfoundry/bosh-init/installation/mocks"
-	mock_httpagent "github.com/cloudfoundry/bosh-init/internal/github.com/cloudfoundry/bosh-agent/agentclient/http/mocks"
-	mock_agentclient "github.com/cloudfoundry/bosh-init/internal/github.com/cloudfoundry/bosh-agent/agentclient/mocks"
-	"github.com/cloudfoundry/bosh-init/internal/github.com/golang/mock/gomock"
 	mock_release "github.com/cloudfoundry/bosh-init/release/mocks"
+	"github.com/golang/mock/gomock"
 
+	biagentclient "github.com/cloudfoundry/bosh-agent/agentclient"
+	bias "github.com/cloudfoundry/bosh-agent/agentclient/applyspec"
 	bicloud "github.com/cloudfoundry/bosh-init/cloud"
 	biconfig "github.com/cloudfoundry/bosh-init/config"
 	bicpirel "github.com/cloudfoundry/bosh-init/cpi/release"
@@ -38,14 +40,6 @@ import (
 	biinstall "github.com/cloudfoundry/bosh-init/installation"
 	biinstallmanifest "github.com/cloudfoundry/bosh-init/installation/manifest"
 	bitarball "github.com/cloudfoundry/bosh-init/installation/tarball"
-	biagentclient "github.com/cloudfoundry/bosh-init/internal/github.com/cloudfoundry/bosh-agent/agentclient"
-	bias "github.com/cloudfoundry/bosh-init/internal/github.com/cloudfoundry/bosh-agent/agentclient/applyspec"
-	bosherr "github.com/cloudfoundry/bosh-init/internal/github.com/cloudfoundry/bosh-utils/errors"
-	bihttp "github.com/cloudfoundry/bosh-init/internal/github.com/cloudfoundry/bosh-utils/httpclient"
-	boshlog "github.com/cloudfoundry/bosh-init/internal/github.com/cloudfoundry/bosh-utils/logger"
-	biproperty "github.com/cloudfoundry/bosh-init/internal/github.com/cloudfoundry/bosh-utils/property"
-	fakesys "github.com/cloudfoundry/bosh-init/internal/github.com/cloudfoundry/bosh-utils/system/fakes"
-	fakeuuid "github.com/cloudfoundry/bosh-init/internal/github.com/cloudfoundry/bosh-utils/uuid/fakes"
 	biregistry "github.com/cloudfoundry/bosh-init/registry"
 	birel "github.com/cloudfoundry/bosh-init/release"
 	bireljob "github.com/cloudfoundry/bosh-init/release/job"
@@ -53,11 +47,17 @@ import (
 	birelsetmanifest "github.com/cloudfoundry/bosh-init/release/set/manifest"
 	bistemcell "github.com/cloudfoundry/bosh-init/stemcell"
 	biui "github.com/cloudfoundry/bosh-init/ui"
+	bosherr "github.com/cloudfoundry/bosh-utils/errors"
+	bihttp "github.com/cloudfoundry/bosh-utils/httpclient"
+	boshlog "github.com/cloudfoundry/bosh-utils/logger"
+	biproperty "github.com/cloudfoundry/bosh-utils/property"
+	fakesys "github.com/cloudfoundry/bosh-utils/system/fakes"
+	fakeuuid "github.com/cloudfoundry/bosh-utils/uuid/fakes"
 
 	fakebicrypto "github.com/cloudfoundry/bosh-init/crypto/fakes"
-	fakebihttpclient "github.com/cloudfoundry/bosh-init/internal/github.com/cloudfoundry/bosh-utils/httpclient/fakes"
 	fakebistemcell "github.com/cloudfoundry/bosh-init/stemcell/fakes"
 	fakebiui "github.com/cloudfoundry/bosh-init/ui/fakes"
+	fakebihttpclient "github.com/cloudfoundry/bosh-utils/httpclient/fakes"
 )
 
 var _ = Describe("bosh-init", func() {
@@ -344,9 +344,9 @@ cloud_provider:
 			applySpec = bias.ApplySpec{
 				Deployment: "test-release",
 				Index:      jobIndex,
-				Networks: map[string]biproperty.Map{
-					"network-1": biproperty.Map{
-						"cloud_properties": biproperty.Map{},
+				Networks: map[string]interface{}{
+					"network-1": map[string]interface{}{
+						"cloud_properties": map[string]interface{}{},
 						"type":             "dynamic",
 						"ip":               "",
 					},
@@ -370,7 +370,8 @@ cloud_provider:
 			//TODO: use a real state builder
 
 			mockStateBuilderFactory.EXPECT().NewBuilder(mockBlobstore, mockAgentClient).Return(mockStateBuilder).AnyTimes()
-			mockStateBuilder.EXPECT().Build(jobName, jobIndex, gomock.Any(), gomock.Any()).Return(mockState, nil).AnyTimes()
+			mockStateBuilder.EXPECT().Build(jobName, jobIndex, gomock.Any(), gomock.Any(), gomock.Any()).Return(mockState, nil).AnyTimes()
+			mockStateBuilder.EXPECT().BuildInitialState(jobName, jobIndex, gomock.Any()).Return(mockState, nil).AnyTimes()
 			mockState.EXPECT().ToApplySpec().Return(applySpec).AnyTimes()
 		}
 
@@ -500,10 +501,14 @@ cloud_provider:
 				mockCloud.EXPECT().AttachDisk(vmCID, diskCID),
 				mockAgentClient.EXPECT().MountDisk(diskCID),
 
+				mockAgentClient.EXPECT().Apply(applySpec),
+				mockAgentClient.EXPECT().GetState(),
 				mockAgentClient.EXPECT().Stop(),
 				mockAgentClient.EXPECT().Apply(applySpec),
+				mockAgentClient.EXPECT().RunScript("pre-start", map[string]interface{}{}),
 				mockAgentClient.EXPECT().Start(),
 				mockAgentClient.EXPECT().GetState().Return(agentRunningState, nil),
+				mockAgentClient.EXPECT().RunScript("post-start", map[string]interface{}{}),
 			)
 		}
 
@@ -543,10 +548,14 @@ cloud_provider:
 				mockCloud.EXPECT().DeleteDisk(oldDiskCID),
 
 				// start jobs & wait for running
+				mockAgentClient.EXPECT().Apply(applySpec),
+				mockAgentClient.EXPECT().GetState(),
 				mockAgentClient.EXPECT().Stop(),
 				mockAgentClient.EXPECT().Apply(applySpec),
+				mockAgentClient.EXPECT().RunScript("pre-start", map[string]interface{}{}),
 				mockAgentClient.EXPECT().Start(),
 				mockAgentClient.EXPECT().GetState().Return(agentRunningState, nil),
+				mockAgentClient.EXPECT().RunScript("post-start", map[string]interface{}{}),
 			)
 		}
 
@@ -582,10 +591,14 @@ cloud_provider:
 				mockCloud.EXPECT().DeleteDisk(oldDiskCID),
 
 				// start jobs & wait for running
+				mockAgentClient.EXPECT().Apply(applySpec),
+				mockAgentClient.EXPECT().GetState(),
 				mockAgentClient.EXPECT().Stop(),
 				mockAgentClient.EXPECT().Apply(applySpec),
+				mockAgentClient.EXPECT().RunScript("pre-start", map[string]interface{}{}),
 				mockAgentClient.EXPECT().Start(),
 				mockAgentClient.EXPECT().GetState().Return(agentRunningState, nil),
+				mockAgentClient.EXPECT().RunScript("post-start", map[string]interface{}{}),
 			)
 		}
 
@@ -689,10 +702,14 @@ cloud_provider:
 				mockCloud.EXPECT().DeleteDisk(oldDiskCID),
 
 				// start jobs & wait for running
+				mockAgentClient.EXPECT().Apply(applySpec),
+				mockAgentClient.EXPECT().GetState(),
 				mockAgentClient.EXPECT().Stop(),
 				mockAgentClient.EXPECT().Apply(applySpec),
+				mockAgentClient.EXPECT().RunScript("pre-start", map[string]interface{}{}),
 				mockAgentClient.EXPECT().Start(),
 				mockAgentClient.EXPECT().GetState().Return(agentRunningState, nil),
+				mockAgentClient.EXPECT().RunScript("post-start", map[string]interface{}{}),
 			)
 		}
 
@@ -743,12 +760,16 @@ cloud_provider:
 				),
 
 				mockAgentClient.EXPECT().MountDisk(diskCID),
+				mockAgentClient.EXPECT().Apply(applySpec),
+				mockAgentClient.EXPECT().GetState(),
 				mockAgentClient.EXPECT().Stop().Do(
 					func() { expectRegistryToWork() },
 				),
 				mockAgentClient.EXPECT().Apply(applySpec),
+				mockAgentClient.EXPECT().RunScript("pre-start", map[string]interface{}{}),
 				mockAgentClient.EXPECT().Start(),
 				mockAgentClient.EXPECT().GetState().Return(agentRunningState, nil),
+				mockAgentClient.EXPECT().RunScript("post-start", map[string]interface{}{}),
 			)
 		}
 
@@ -792,7 +813,7 @@ cloud_provider:
 
 			mockBlobstoreFactory = mock_blobstore.NewMockFactory(mockCtrl)
 			mockBlobstore = mock_blobstore.NewMockBlobstore(mockCtrl)
-			mockBlobstoreFactory.EXPECT().Create(mbusURL).Return(mockBlobstore, nil).AnyTimes()
+			mockBlobstoreFactory.EXPECT().Create(mbusURL, gomock.Any()).Return(mockBlobstore, nil).AnyTimes()
 
 			fakeStemcellExtractor = fakebistemcell.NewFakeExtractor()
 
