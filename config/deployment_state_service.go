@@ -9,6 +9,7 @@ type DeploymentState struct {
 	InstallationID      string           `json:"installation_id"`
 	CurrentVMCID        string           `json:"current_vm_cid"`
 	CurrentAgentID      string           `json:"current_agent_id"`
+	CurrentIP           string           `json:"current_ip"`
 	CurrentStemcellID   string           `json:"current_stemcell_id"`
 	CurrentDiskID       string           `json:"current_disk_id"`
 	CurrentReleaseIDs   []string         `json:"current_release_ids"`
