@@ -217,7 +217,7 @@ func (vm *vm) Delete() error {
 	}
 
 	// returns bicloud.Error only if it is a VMNotFoundError
-	return deleteErr
+	return nil
 }
 
 func (vm *vm) GetState() (biagentclient.AgentState, error) {
