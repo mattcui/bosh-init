@@ -191,21 +191,22 @@ func (vm *vm) RunScript(script string, options map[string]interface{}) error {
 }
 
 func (vm *vm) Delete() error {
-	agentID, _, err := vm.vmRepo.FindCurrentAgentId()
-	if err != nil {
-		return bosherr.WrapError(err, "Finding currently agent id of deployed vm")
-	}
+	//disable director deletion for bluemix
+	//agentID, _, err := vm.vmRepo.FindCurrentAgentId()
+	//if err != nil {
+	//	return bosherr.WrapError(err, "Finding currently agent id of deployed vm")
+	//}
 
-	deleteErr := vm.cloud.DeleteVM(vm.cid, agentID)
-	if deleteErr != nil {
-		// allow VMNotFoundError for idempotency
-		cloudErr, ok := deleteErr.(bicloud.Error)
-		if !ok || cloudErr.Type() != bicloud.VMNotFoundError {
-			return bosherr.WrapError(deleteErr, "Deleting vm in the cloud")
-		}
-	}
+	//deleteErr := vm.cloud.DeleteVM(vm.cid, agentID)
+	//if deleteErr != nil {
+	//	// allow VMNotFoundError for idempotency
+	//	cloudErr, ok := deleteErr.(bicloud.Error)
+	//	if !ok || cloudErr.Type() != bicloud.VMNotFoundError {
+	//		return bosherr.WrapError(deleteErr, "Deleting vm in the cloud")
+	//	}
+	//}
 
-	err = vm.vmRepo.ClearCurrent()
+	err := vm.vmRepo.ClearCurrent()
 	if err != nil {
 		return bosherr.WrapError(err, "Deleting vm from vm repo")
 	}
