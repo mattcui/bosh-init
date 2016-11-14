@@ -5,30 +5,46 @@ RUN dpkg-reconfigure locales
 ENV LANG en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
 
+#basic deps
 RUN apt-get update
-RUN apt-get -y upgrade; apt-get clean
+RUN apt-get -y upgrade && apt-get clean
+RUN apt-get install -y \
+	build-essential \
+	git \
+	mercurial \
+	curl \
+	wget \
+	tar \
+	libssl-dev \
+	libreadline-dev \
+	dnsutils \
+	xvfb \
+	&& apt-get clean
 
-RUN apt-get install -y build-essential zlib1g-dev libssl-dev libxml2-dev libsqlite3-dev libxslt1-dev libpq-dev libmysqlclient-dev
-RUN apt-get install -y git curl wget tar ruby ruby-dev
-RUN apt-get clean
+#global - ruby will need these
+# Nokogiri dependencies
+RUN apt-get install -y libxslt-dev libxml2-dev && apt-get clean
 
-# package manager provides 1.4.3, which is too old for vagrant-aws
-RUN cd /tmp && wget -q https://releases.hashicorp.com/vagrant/1.6.5/vagrant_1.6.5_x86_64.deb && dpkg -i vagrant_1.6.5_x86_64.deb
-RUN vagrant plugin install vagrant-aws
-
-# bosh-init dependencies
-RUN apt-get install -y mercurial; apt-get clean
-# ...go
-ADD install-go.sh /tmp/install-go.sh
-RUN chmod a+x /tmp/install-go.sh
-RUN cd tmp; ./install-go.sh; rm install-go.sh
-# ...ruby
+#global
 ADD install-ruby.sh /tmp/install-ruby.sh
 RUN chmod a+x /tmp/install-ruby.sh
-RUN cd tmp; ./install-ruby.sh; rm install-ruby.sh
+RUN cd /tmp && ./install-ruby.sh && rm install-ruby.sh
+
+#global
+ENV GOROOT /usr/local/go
+ENV PATH $GOROOT/bin:$PATH
+ADD install-go.sh deps-golang /tmp/
+RUN chmod a+x /tmp/install-go.sh
+RUN cd /tmp && ./install-go.sh && rm install-go.sh deps-golang
+
+ADD root_bashrc /root/.bashrc
+
+# package manager provides 1.4.3, which is too old for vagrant-aws
+ADD install-vagrant.sh /tmp/install-vagrant.sh
+RUN /tmp/install-vagrant.sh && rm /tmp/install-vagrant.sh
 
 # lifecycle ssh test
-RUN apt-get install -y sshpass; apt-get clean
+RUN apt-get install -y sshpass && apt-get clean
 
 # integration registry tests
 RUN apt-get install -y openssh-server

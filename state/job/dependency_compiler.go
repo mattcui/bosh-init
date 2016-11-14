@@ -71,7 +71,10 @@ func (c *dependencyCompiler) resolveJobCompilationDependencies(releaseJobs []bir
 	}
 
 	// sort in compilation order
-	sortedPackages := birelpkg.Sort(packages)
+	sortedPackages, err := birelpkg.Sort(packages)
+	if err != nil {
+		return nil, err
+	}
 
 	pkgs := []string{}
 	for _, pkg := range sortedPackages {
