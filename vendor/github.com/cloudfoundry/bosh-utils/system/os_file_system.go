@@ -364,7 +364,7 @@ func (f *osFileSystem) ChangeTempRoot(tempRootPath string) error {
 
 func (fs *osFileSystem) RemoveAll(fileOrDir string) (err error) {
 	fs.logger.Debug(fs.logTag, "Remove all %s", fileOrDir)
-	err = fsWrapper.RemoveAll(fileOrDir)
+//	err = fsWrapper.RemoveAll(fileOrDir)
 	return
 }
 
